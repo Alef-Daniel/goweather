@@ -1,0 +1,13 @@
+
+{
+  "app_name": "GO Weather",
+  "port": 8080,
+  "log_level": "INFO",
+  "weather_api": {
+    "base_url": "https://weather.visualcrossing.com",
+    "api_key": "YOU_API_KEY"
+  },
+  "cache": {
+    "endpoint": "http://localhost:6379"
+  }
+}
