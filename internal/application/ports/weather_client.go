@@ -1,6 +1,13 @@
 package ports
 
+import (
+	"context"
+	"time"
+
+	"github.com/Alef-Daniel/goweather/internal/api/dtos"
+)
+
 type WeatherClient interface {
-	GetForecastByLocation(location string) (string, error)
-	GetForecastByLocationAndDateRange(location string, from string, to string) (string, error)
+	GetForecastByLocation(ctx context.Context, location string) (*dtos.WeatherResponsAPI, error)
+	GetForecastByLocationAndDateRange(ctx context.Context, location string, dateInit, dateEnd *time.Time) (*dtos.WeatherResponsAPI, error)
 }
