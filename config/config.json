@@ -5,9 +5,9 @@
   "log_level": "INFO",
   "weather_api": {
     "base_url": "https://weather.visualcrossing.com",
-    "api_key": "YOU_API_KEY"
+    "api_key": "YOUR_API_KEY"
   },
   "cache": {
-    "endpoint": "http://localhost:6379"
+    "endpoint": "localhost:6379"
   }
 }
