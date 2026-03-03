@@ -31,11 +31,10 @@ func (r Redis) Delete(ctx context.Context, key string) error {
 	return r.client.Del(ctx, key).Err()
 }
 
-func NewRedis(addr, pass string, db int) *Redis {
+func NewRedis(addr, pass string) *Redis {
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     addr,
 		Password: pass,
-		DB:       db,
 	})
 
 	return &Redis{client: rdb}
