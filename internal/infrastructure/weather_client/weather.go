@@ -2,6 +2,7 @@ package weather_client
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 	"path"
 	"time"
 
+	"github.com/Alef-Daniel/goweather/internal/api/dtos"
 	"github.com/Alef-Daniel/goweather/internal/domain"
 )
 
@@ -18,68 +20,124 @@ type Weather struct {
 	apiKey  string
 }
 
-func (w *Weather) GetForecastByLocation(ctx context.Context, location string) (string, error) {
-	if location == "" {
-		return "", domain.ErrInvalidLocation
+func (w *Weather) GetForecastByLocation(ctx context.Context, location string) (*dtos.WeatherResponsAPI, error) {
+	buildURL, err := w.buildURL("VisualCrossingWebServices/rest/services/timeline/", location, nil, nil)
+	if err != nil {
+		return nil, err
 	}
 
-	buildURL, err := w.buildURL("VisualCrossingWebServices/rest/services/timeline/", location, "", "")
-	if err != nil {
-		return "", err
-	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, buildURL, nil)
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, buildURL, nil)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	resp, err := w.client.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("weather request failed: %w", err)
+		return nil, fmt.Errorf("weather request failed: %w", err)
 	}
 
 	defer resp.Body.Close()
 
 	switch resp.StatusCode {
 	case http.StatusOK:
+		var apiResp dtos.WeatherResponsAPI
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return "", fmt.Errorf("failed to read response: %w", err)
+			return nil, fmt.Errorf("failed to read response: %w", err)
 		}
-		return string(body), nil
+		err = json.Unmarshal(body, &apiResp)
+		if err != nil {
+			return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+		}
+		return &apiResp, nil
 	case http.StatusBadRequest:
-		return "", domain.ErrInvalidLocation
+		return nil, domain.ErrInvalidLocation
 
 	case http.StatusUnauthorized:
-		return "", domain.ErrUnauthorized
+		return nil, domain.ErrUnauthorized
 
 	case http.StatusNotFound:
-		return "", domain.ErrLocationNotFound
+		return nil, domain.ErrLocationNotFound
 
 	case http.StatusTooManyRequests:
-		return "", domain.ErrRateLimited
+		return nil, domain.ErrRateLimited
 
 	case http.StatusInternalServerError:
-		return "", domain.ErrExternalService
+		return nil, domain.ErrExternalService
 
 	default:
-		return "", fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
 }
 
-func (w *Weather) GetForecastByLocationAndDateRange(location string, from string, to string) (string, error) {
-	return "", nil
+func (w *Weather) GetForecastByLocationAndDateRange(ctx context.Context, location string, dateInit, dateEnd *time.Time) (*dtos.WeatherResponsAPI, error) {
+	buildURL, err := w.buildURL("VisualCrossingWebServices/rest/services/timeline/", location, dateInit, dateEnd)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, buildURL, nil)
+	fmt.Println(req.URL.String())
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := w.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("weather request failed: %w", err)
+	}
+
+	defer resp.Body.Close()
+
+	switch resp.StatusCode {
+	case http.StatusOK:
+		var apiResp dtos.WeatherResponsAPI
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read response: %w", err)
+		}
+		err = json.Unmarshal(body, &apiResp)
+		if err != nil {
+			return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+		}
+		return &apiResp, nil
+	case http.StatusBadRequest:
+		body, _ := io.ReadAll(resp.Body)
+		fmt.Println(string(body))
+		return nil, domain.ErrInvalidLocation
+
+	case http.StatusUnauthorized:
+		return nil, domain.ErrUnauthorized
+
+	case http.StatusNotFound:
+		return nil, domain.ErrLocationNotFound
+
+	case http.StatusTooManyRequests:
+		return nil, domain.ErrRateLimited
+
+	case http.StatusInternalServerError:
+		return nil, domain.ErrExternalService
+
+	default:
+		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
 }
 
-func (w *Weather) buildURL(pathComplete, location, date_first, date_end string) (string, error) {
+func (w *Weather) buildURL(pathComplete, location string, date_first, date_end *time.Time) (string, error) {
+	var dateInitStr, dateEndStr string
 	url, err := url.Parse(w.baseURL)
 	if err != nil {
 		return "", err
 	}
 	url.Path = path.Join(url.Path, pathComplete, location)
-	if date_first != "" && date_end != "" {
-		url.Path = path.Join(url.Path, date_first, date_end)
+	if date_first != nil && date_end != nil {
+
+		dateInitStr = date_first.Format("2006-01-02")
+		dateEndStr = date_end.Format("2006-01-02")
+		url.Path = path.Join(url.Path, dateEndStr, dateInitStr)
 	}
 
 	q := url.Query()
