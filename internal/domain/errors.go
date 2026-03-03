@@ -8,4 +8,5 @@ var (
 	ErrUnauthorized     = errors.New("unauthorized")
 	ErrRateLimited      = errors.New("rate limit exceeded")
 	ErrExternalService  = errors.New("external service failure")
+	ErrRangeDateInvalid = errors.New("range date invalid")
 )
