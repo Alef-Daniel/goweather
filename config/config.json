@@ -8,6 +8,6 @@
     "api_key": "YOUR_API_KEY"
   },
   "cache": {
-    "endpoint": "localhost:6379"
+    "endpoint": "redis:6379"
   }
 }
